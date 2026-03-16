@@ -1,0 +1,16 @@
+{
+  "clientId": "ansr",
+  "clientName": "ANSR",
+  "logoAsset": "assets/images/ansr_logo.png",
+  "primaryColor": "#005465",
+  "secondaryColor": "#007A8A",
+  "accentColor": "#00B4CC",
+  "backgroundColor": "#F5F7FA",
+  "surfaceColor": "#FFFFFF",
+  "visitorDatabasePipelineId": "13274",
+  "visitorManagementPipelineId": "13273",
+  "employeeMasterPipelineId": "13181",
+  "apiBaseUrl": "https://kelsa.io",
+  "termsUrl": "https://vizmo.co/terms",
+  "privacyUrl": "https://vizmo.co/privacy"
+}
