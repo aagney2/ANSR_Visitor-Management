@@ -38,6 +38,7 @@ class CheckinState {
   final AttachmentValue? signatureAttachment;
   final bool detailsEdited;
   final bool isLoading;
+  final String? submitProgress;
   final String? errorMessage;
   final int? createdVisitorDbId;
   final int? createdVisitEntryId;
@@ -63,6 +64,7 @@ class CheckinState {
     this.signatureAttachment,
     this.detailsEdited = false,
     this.isLoading = false,
+    this.submitProgress,
     this.errorMessage,
     this.createdVisitorDbId,
     this.createdVisitEntryId,
@@ -89,6 +91,7 @@ class CheckinState {
     AttachmentValue? signatureAttachment,
     bool? detailsEdited,
     bool? isLoading,
+    String? submitProgress,
     String? errorMessage,
     int? createdVisitorDbId,
     int? createdVisitEntryId,
@@ -114,6 +117,7 @@ class CheckinState {
       signatureAttachment: signatureAttachment ?? this.signatureAttachment,
       detailsEdited: detailsEdited ?? this.detailsEdited,
       isLoading: isLoading ?? this.isLoading,
+      submitProgress: submitProgress,
       errorMessage: errorMessage,
       createdVisitorDbId: createdVisitorDbId ?? this.createdVisitorDbId,
       createdVisitEntryId: createdVisitEntryId ?? this.createdVisitEntryId,
@@ -245,6 +249,7 @@ class CheckinNotifier extends StateNotifier<CheckinState> {
       step: CheckinStep.submitting,
       isLoading: true,
       errorMessage: null,
+      submitProgress: 'Uploading media...',
     );
 
     try {
@@ -252,32 +257,49 @@ class CheckinNotifier extends StateNotifier<CheckinState> {
       final uploadService = _ref.read(kelsaUploadServiceProvider);
       final repo = _ref.read(visitorRepositoryProvider);
 
-      // Upload photo to visitor database pipeline
-      AttachmentValue? photoAttachment;
-      if (state.photoFile != null) {
-        photoAttachment = await uploadService.uploadPhoto(
-          file: state.photoFile!,
-          pipelineId: config.visitorDatabasePipelineId,
-        );
-        state = state.copyWith(photoAttachment: photoAttachment);
-      }
+      // Upload photo + signature in parallel
+      final photoFuture = state.photoFile != null
+          ? uploadService.uploadPhoto(
+              file: state.photoFile!,
+              pipelineId: config.visitorDatabasePipelineId,
+            )
+          : Future<AttachmentValue?>.value(null);
 
-      // Upload signature to visitor management pipeline
-      AttachmentValue? signatureAttachment;
-      if (state.signatureBytes != null) {
-        signatureAttachment = await uploadService.uploadSignature(
-          signatureBytes: state.signatureBytes!,
-          pipelineId: config.visitorManagementPipelineId,
-        );
-        state = state.copyWith(signatureAttachment: signatureAttachment);
-      }
+      final sigFuture = state.signatureBytes != null
+          ? uploadService.uploadSignature(
+              signatureBytes: state.signatureBytes!,
+              pipelineId: config.visitorManagementPipelineId,
+            )
+          : Future<AttachmentValue?>.value(null);
+
+      // Also pre-warm custom fields while uploads are in progress
+      final dbFieldsFuture = repo.getDatabaseFields();
+      final mgmtFieldsFuture = repo.getManagementFields();
+
+      final results = await Future.wait([
+        photoFuture,
+        sigFuture,
+        dbFieldsFuture,
+        mgmtFieldsFuture,
+      ]);
+
+      final photoAttachment = results[0] as AttachmentValue?;
+      final signatureAttachment = results[1] as AttachmentValue?;
+
+      state = state.copyWith(
+        photoAttachment: photoAttachment,
+        signatureAttachment: signatureAttachment,
+        submitProgress: 'Saving visitor details...',
+      );
 
       final visitor = state.toVisitor();
 
-      // Step 1: Create/update in Visitor Database
+      // Create/update in Visitor Database
       final dbId = await repo.createOrUpdateVisitorDatabase(visitor);
 
-      // Step 2: Create visit entry in Visitor Management
+      state = state.copyWith(submitProgress: 'Creating check-in entry...');
+
+      // Create visit entry in Visitor Management
       final visitId = await repo.createVisitEntry(
         visitor: visitor,
         databaseLeadId: dbId,
@@ -288,12 +310,14 @@ class CheckinNotifier extends StateNotifier<CheckinState> {
         isLoading: false,
         createdVisitorDbId: dbId,
         createdVisitEntryId: visitId,
+        submitProgress: null,
       );
     } catch (e) {
       state = state.copyWith(
         step: CheckinStep.review,
         isLoading: false,
         errorMessage: e.toString(),
+        submitProgress: null,
       );
     }
   }

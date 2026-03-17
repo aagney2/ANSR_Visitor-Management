@@ -78,23 +78,30 @@ class ReturningVisitorScreen extends ConsumerWidget {
                       if (state.visitor?.photoUrl != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Image.network(
-                              state.visitor!.photoUrl!,
-                              height: 160,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                height: 160,
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Icon(
-                                  Icons.person,
-                                  size: 64,
-                                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                          child: Container(
+                            constraints: const BoxConstraints(maxHeight: 240),
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.04),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.network(
+                                state.visitor!.photoUrl!,
+                                width: double.infinity,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => Container(
+                                  height: 160,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 64,
+                                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                                  ),
                                 ),
                               ),
                             ),

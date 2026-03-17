@@ -32,7 +32,7 @@ class ReviewScreen extends ConsumerWidget {
       ),
       body: LoadingOverlay(
         isLoading: state.isLoading,
-        message: 'Submitting your check-in...\nThis may take a moment.',
+        message: state.submitProgress ?? 'Submitting...',
         child: SafeArea(
           child: ListView(
             padding: const EdgeInsets.all(24),
@@ -149,13 +149,20 @@ class ReviewScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.file(
-                    state.photoFile!,
-                    height: 160,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 240),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.file(
+                      state.photoFile!,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),

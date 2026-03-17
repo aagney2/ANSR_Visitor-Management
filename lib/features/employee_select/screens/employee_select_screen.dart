@@ -20,6 +20,15 @@ class _EmployeeSelectScreenState extends ConsumerState<EmployeeSelectScreen> {
   EmployeeOption? _selected;
 
   @override
+  void initState() {
+    super.initState();
+    // Reset filter so the full employee list shows on each visit
+    Future.microtask(() {
+      ref.read(whomToMeetProvider.notifier).search('');
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();

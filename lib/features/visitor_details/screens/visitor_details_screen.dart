@@ -211,7 +211,7 @@ class _VisitorDetailsScreenState extends ConsumerState<VisitorDetailsScreen> {
                           borderRadius: BorderRadius.circular(15),
                           child: Image.file(
                             _photoFile!,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                             width: double.infinity,
                           ),
                         )
@@ -223,7 +223,7 @@ class _VisitorDetailsScreenState extends ConsumerState<VisitorDetailsScreen> {
                                   borderRadius: BorderRadius.circular(15),
                                   child: Image.network(
                                     _savedPhotoUrl!,
-                                    fit: BoxFit.cover,
+                                    fit: BoxFit.contain,
                                     errorBuilder: (_, __, ___) => const Center(
                                       child: Icon(Icons.broken_image, size: 48),
                                     ),

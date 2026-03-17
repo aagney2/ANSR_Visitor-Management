@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,6 +41,12 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
       Validators.normalizePhone(_phoneController.text.trim()),
     );
     notifier.setConsent(true);
+
+    // Pre-warm custom field caches in background while searching
+    final repo = ref.read(visitorRepositoryProvider);
+    unawaited(repo.getDatabaseFields());
+    unawaited(repo.getManagementFields());
+
     await notifier.searchVisitor();
 
     if (!mounted) return;
