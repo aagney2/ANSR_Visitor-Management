@@ -3,13 +3,77 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import '../../../data/services/badge_generator.dart';
 import '../../../features/visitor_checkin/providers/checkin_provider.dart';
+import '../../../features/printer/providers/printer_provider.dart';
 
-class SuccessScreen extends ConsumerWidget {
+class SuccessScreen extends ConsumerStatefulWidget {
   const SuccessScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SuccessScreen> createState() => _SuccessScreenState();
+}
+
+class _SuccessScreenState extends ConsumerState<SuccessScreen> {
+  String? _printStatus;
+  bool _isPrinting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => _autoPrintBadge());
+  }
+
+  Future<void> _autoPrintBadge() async {
+    final service = ref.read(printerServiceProvider);
+    final hasPrinter = await service.hasPrinter();
+    if (!hasPrinter) return;
+
+    await _printBadge();
+  }
+
+  Future<void> _printBadge() async {
+    if (_isPrinting) return;
+    setState(() {
+      _isPrinting = true;
+      _printStatus = 'Printing badge...';
+    });
+
+    try {
+      final state = ref.read(checkinProvider);
+      final now = DateTime.now();
+
+      final badgeData = BadgeData(
+        visitorName: state.name ?? 'Visitor',
+        dateTime: DateFormat('MMM d, yyyy h:mm a').format(now),
+        whomToMeet: state.selectedWhomToMeet?.name ?? '—',
+        purpose: state.purpose ?? 'Visitor',
+        qrData: 'ANSR-VISITOR:${state.createdVisitEntryId ?? ""}|${state.name ?? ""}|${state.phoneNumber}',
+        photoFile: state.photoFile,
+      );
+
+      final imageBytes = await BadgeGenerator.generateBadge(badgeData);
+      final service = ref.read(printerServiceProvider);
+      await service.printBadge(imageBytes);
+
+      if (mounted) {
+        setState(() {
+          _printStatus = 'Badge printed!';
+          _isPrinting = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _printStatus = 'Print failed: ${e.toString().length > 50 ? '${e.toString().substring(0, 50)}...' : e}';
+          _isPrinting = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(checkinProvider);
     final theme = Theme.of(context);
     final now = DateTime.now();
@@ -119,6 +183,62 @@ class SuccessScreen extends ConsumerWidget {
                     ],
                   ),
                 ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
+                if (_printStatus != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_isPrinting)
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        else
+                          Icon(
+                            _printStatus!.contains('failed')
+                                ? Icons.print_disabled
+                                : Icons.print,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _printStatus!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                          ),
+                        ),
+                        if (_printStatus!.contains('failed')) ...[
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: _printBadge,
+                            child: const Text(
+                              'Retry',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 300.ms),
+                ],
                 const Spacer(flex: 3),
                 SizedBox(
                   width: double.infinity,

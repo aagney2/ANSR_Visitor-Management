@@ -51,6 +51,22 @@
 	<string>This app needs camera access to capture your visitor photo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs photo library access to select a visitor photo.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Bluetooth is required for connection to the badge printer.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Bluetooth is required for connection to the badge printer.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Local network access is required to discover and print to the badge printer.</string>
+	<key>UISupportedExternalAccessoryProtocols</key>
+	<array>
+		<string>com.brother.ptcbp</string>
+	</array>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_printer._tcp</string>
+		<string>_pdl-datastream._tcp</string>
+		<string>_ipp._tcp</string>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

@@ -7,6 +7,7 @@ import '../features/employee_select/screens/employee_select_screen.dart';
 import '../features/visitor_details/screens/visitor_details_screen.dart';
 import '../features/review/screens/review_screen.dart';
 import '../features/success/screens/success_screen.dart';
+import '../features/printer/screens/printer_settings_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -14,6 +15,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/',
       builder: (context, state) => const BrandingScreen(),
+    ),
+    GoRoute(
+      path: '/printer-settings',
+      builder: (context, state) => const PrinterSettingsScreen(),
     ),
     GoRoute(
       path: '/phone',
