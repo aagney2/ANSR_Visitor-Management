@@ -39,11 +39,13 @@ class KelsaUploadService {
       },
     ));
 
-    _kelsaDio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (obj) => debugPrint('[UPLOAD] $obj'),
-    ));
+    if (kDebugMode) {
+      _kelsaDio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (obj) => debugPrint('[UPLOAD] $obj'),
+      ));
+    }
 
     _s3Dio = Dio(BaseOptions(
       connectTimeout: Duration(seconds: AppConstants.apiTimeoutSeconds),

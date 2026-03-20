@@ -46,10 +46,11 @@ class _SuccessScreenState extends ConsumerState<SuccessScreen> {
       final badgeData = BadgeData(
         visitorName: state.name ?? 'Visitor',
         dateTime: DateFormat('MMM d, yyyy h:mm a').format(now),
-        whomToMeet: state.selectedWhomToMeet?.name ?? '—',
+        whomToMeet: state.selectedWhomToMeet?.name ?? '',
         purpose: state.purpose ?? 'Visitor',
         qrData: 'ANSR-VISITOR:${state.createdVisitEntryId ?? ""}|${state.name ?? ""}|${state.phoneNumber}',
         photoFile: state.photoFile,
+        photoUrl: state.photoAttachment?.url ?? state.visitor?.photoUrl,
       );
 
       final imageBytes = await BadgeGenerator.generateBadge(badgeData);
@@ -65,7 +66,7 @@ class _SuccessScreenState extends ConsumerState<SuccessScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _printStatus = 'Print failed: ${e.toString().length > 50 ? '${e.toString().substring(0, 50)}...' : e}';
+          _printStatus = 'Print failed. Please check printer connection.';
           _isPrinting = false;
         });
       }
@@ -213,11 +214,14 @@ class _SuccessScreenState extends ConsumerState<SuccessScreen> {
                             size: 18,
                           ),
                         const SizedBox(width: 8),
-                        Text(
-                          _printStatus!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
+                        Flexible(
+                          child: Text(
+                            _printStatus!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (_printStatus!.contains('failed')) ...[

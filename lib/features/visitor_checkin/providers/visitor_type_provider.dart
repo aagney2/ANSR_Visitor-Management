@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../data/models/kelsa_field.dart';
 import '../../../shared/providers/app_providers.dart';
 
@@ -53,7 +54,7 @@ class VisitorTypeNotifier extends StateNotifier<VisitorTypeState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: 'Failed to load visitor types: $e',
+        error: userFriendlyError(e),
       );
     }
   }

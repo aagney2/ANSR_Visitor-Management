@@ -5,8 +5,22 @@ class AppException implements Exception {
 
   const AppException(this.message, {this.code, this.originalError});
 
+  String get userMessage => message;
+
   @override
-  String toString() => 'AppException($code): $message';
+  String toString() => message;
+}
+
+String userFriendlyError(dynamic e) {
+  if (e is AppException) return e.userMessage;
+  final msg = e.toString();
+  if (msg.contains('SocketException') || msg.contains('Connection refused')) {
+    return 'Unable to connect. Please check your internet connection.';
+  }
+  if (msg.contains('TimeoutException') || msg.contains('timed out')) {
+    return 'Request timed out. Please try again.';
+  }
+  return 'Something went wrong. Please try again.';
 }
 
 class NetworkException extends AppException {

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../data/models/visitor.dart';
 import '../../../data/services/kelsa_upload_service.dart';
 import '../../../features/employee_select/providers/employee_provider.dart';
@@ -190,7 +191,7 @@ class CheckinNotifier extends StateNotifier<CheckinState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: e.toString(),
+        errorMessage: userFriendlyError(e),
       );
     }
   }
@@ -316,7 +317,7 @@ class CheckinNotifier extends StateNotifier<CheckinState> {
       state = state.copyWith(
         step: CheckinStep.review,
         isLoading: false,
-        errorMessage: e.toString(),
+        errorMessage: userFriendlyError(e),
         submitProgress: null,
       );
     }

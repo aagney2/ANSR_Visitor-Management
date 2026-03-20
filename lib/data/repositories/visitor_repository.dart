@@ -189,6 +189,45 @@ class VisitorRepository {
     return await _resolveLeadId(result, _mgmtService);
   }
 
+  /// Check out a visitor by updating the Visitor Management lead.
+  /// Sets cf_checkout to "Yes" and cf_check_out_date___time to now.
+  Future<Map<String, dynamic>> checkoutVisitor(int leadId) async {
+    final fields = await getManagementFields();
+
+    final payload = <String, dynamic>{};
+
+    // Set checkout date/time to now (ISO 8601)
+    final checkoutTimeKey = fields.resolveFirst(
+        ['check_out_date___time', 'cf_check_out_date___time']);
+    if (checkoutTimeKey != null) {
+      payload[checkoutTimeKey] = DateTime.now().toIso8601String();
+    }
+
+    // Set checkout dropdown to "Yes"
+    final checkoutKey =
+        fields.resolveFirst(['checkout', 'cf_checkout']);
+    if (checkoutKey != null) {
+      final options = fields.optionsFor(checkoutKey);
+      final yesOption = options?.firstWhere(
+        (o) => o.name.toLowerCase() == 'yes',
+        orElse: () => options!.first,
+      );
+      if (yesOption != null) {
+        payload[checkoutKey] = {'id': yesOption.id, 'name': yesOption.name};
+      }
+    }
+
+    if (payload.isEmpty) {
+      throw Exception('Checkout fields not found in pipeline configuration');
+    }
+
+    await _mgmtService.updateLead(leadId, payload);
+
+    // Fetch the updated lead to return visitor details
+    final lead = await _mgmtService.getLead(leadId);
+    return lead.customFieldValues;
+  }
+
   Future<int> _resolveLeadId(
       KelsaLeadOrDraft result, KelsaService service) async {
     if (!result.isDraft && result.leadId != null) return result.leadId!;

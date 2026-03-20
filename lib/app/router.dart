@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import '../features/branding/screens/branding_screen.dart';
+import '../features/checkout/screens/checkout_screen.dart';
 import '../features/onboarding/screens/phone_screen.dart';
 import '../features/visitor_checkin/screens/returning_visitor_screen.dart';
 import '../features/visitor_checkin/screens/purpose_screen.dart';
@@ -19,6 +20,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/printer-settings',
       builder: (context, state) => const PrinterSettingsScreen(),
+    ),
+    GoRoute(
+      path: '/checkout',
+      builder: (context, state) => const CheckoutScreen(),
     ),
     GoRoute(
       path: '/phone',

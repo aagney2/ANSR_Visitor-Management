@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -25,129 +27,57 @@ class BadgeData {
 }
 
 class BadgeGenerator {
-  /// Generate a visitor badge as PNG bytes matching the Brother QL-820NWB
-  /// 62mm label format. Layout matches the ANSR badge template:
-  /// [Photo]  [ANSR Logo]
-  ///          [Name]
-  ///          [Date/Time]
-  ///          [Meeting: ...]
-  ///          [Purpose: ...]
-  /// [QR Code]
+  /// Generates a visitor badge matching the Vizmo reference layout.
+  ///
+  /// Two-column landscape layout (1060×720):
+  ///   LEFT COLUMN:  [Photo circle]  then  [QR code]
+  ///   RIGHT COLUMN: [ANSR logo + text]  then  [Name, Date, Meeting, Purpose]
+  ///
+  /// Rotated 90° CW for the Brother QL-820NWB 62mm roll.
   static Future<Uint8List> generateBadge(BadgeData data) async {
-    // QL-820NWB 62mm label: 720px wide at 300dpi, variable height
-    const double badgeWidth = 720;
-    const double badgeHeight = 450;
-    const double padding = 24;
+    const double W = 1060;
+    const double H = 720;
+
+    const double leftColW = 390;
+    const double gutter = 20;
+    const double rightColX = leftColW + gutter;
+    final double rightColW = W - rightColX - 30;
 
     final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, badgeWidth, badgeHeight));
+    final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, W, H));
+    canvas.drawRect(Rect.fromLTWH(0, 0, W, H), Paint()..color = Colors.white);
 
-    // White background
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, badgeWidth, badgeHeight),
-      Paint()..color = Colors.white,
-    );
-
-    // Load ANSR logo
+    // --- Load assets ---
+    final photoImage = await _loadPhoto(data);
     ui.Image? logoImage;
     try {
-      final logoBytes = await rootBundle.load('assets/images/ansr_logo.png');
+      final logoBytes =
+          await rootBundle.load('assets/images/ansr_logo_full.png');
       logoImage = await _decodeImage(logoBytes.buffer.asUint8List());
-    } catch (_) {}
-
-    // Draw visitor photo (circular, top-left)
-    const double photoSize = 140;
-    const double photoX = padding;
-    const double photoY = padding;
-
-    ui.Image? photoImage;
-    if (data.photoFile != null) {
-      try {
-        final bytes = await data.photoFile!.readAsBytes();
-        photoImage = await _decodeImage(bytes);
-      } catch (_) {}
+    } catch (e) {
+      debugPrint('[BadgeGen] ERROR loading logo: $e');
     }
+
+    // =================================================================
+    // LEFT COLUMN: Photo (top) + QR code (bottom)
+    // =================================================================
+
+    const double photoSize = 350;
+    final double photoX = (leftColW - photoSize) / 2;
+    const double photoY = 15;
 
     if (photoImage != null) {
-      canvas.save();
-      final photoCenter = Offset(photoX + photoSize / 2, photoY + photoSize / 2);
-      final clipPath = Path()
-        ..addOval(Rect.fromCenter(
-          center: photoCenter,
-          width: photoSize,
-          height: photoSize,
-        ));
-      canvas.clipPath(clipPath);
-
-      final srcRect = Rect.fromLTWH(
-        0, 0,
-        photoImage.width.toDouble(),
-        photoImage.height.toDouble(),
-      );
-      final dstRect = Rect.fromLTWH(photoX, photoY, photoSize, photoSize);
-      canvas.drawImageRect(photoImage, srcRect, dstRect, Paint());
-      canvas.restore();
-
-      // Photo border
-      canvas.drawOval(
-        Rect.fromLTWH(photoX, photoY, photoSize, photoSize),
-        Paint()
-          ..color = const Color(0xFFE0E0E0)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2,
-      );
+      await _drawCircularPhoto(canvas, photoImage, photoX, photoY, photoSize);
     } else {
-      // Placeholder circle
-      canvas.drawOval(
-        Rect.fromLTWH(photoX, photoY, photoSize, photoSize),
-        Paint()..color = const Color(0xFFE0E0E0),
-      );
-      _drawText(canvas, '?', photoX + photoSize / 2 - 20, photoY + photoSize / 2 - 30,
-          fontSize: 48, color: const Color(0xFF9E9E9E));
+      _drawPhotoPlaceholder(canvas, photoX, photoY, photoSize);
     }
 
-    // Right side content area
-    const double contentX = photoX + photoSize + 24;
-    double contentY = padding;
+    // QR code below photo
+    const double qrSize = 240;
+    final double qrX = (leftColW - qrSize) / 2;
+    const double qrY = photoY + photoSize + 20;
 
-    // ANSR Logo (top-right)
-    if (logoImage != null) {
-      const double logoHeight = 40;
-      final double logoWidth = logoHeight * (logoImage.width / logoImage.height);
-      final srcRect = Rect.fromLTWH(
-        0, 0,
-        logoImage.width.toDouble(),
-        logoImage.height.toDouble(),
-      );
-      final dstRect = Rect.fromLTWH(contentX, contentY, logoWidth, logoHeight);
-      canvas.drawImageRect(logoImage, srcRect, dstRect, Paint());
-      contentY += logoHeight + 16;
-    }
-
-    // Visitor Name (bold, large)
-    contentY = _drawText(canvas, data.visitorName, contentX, contentY,
-        fontSize: 32, fontWeight: FontWeight.bold);
-    contentY += 8;
-
-    // Date/Time
-    contentY = _drawText(canvas, data.dateTime, contentX, contentY,
-        fontSize: 22, color: const Color(0xFF616161));
-    contentY += 6;
-
-    // Meeting
-    contentY = _drawText(canvas, 'Meeting: ${data.whomToMeet}', contentX, contentY,
-        fontSize: 22, color: const Color(0xFF424242));
-    contentY += 6;
-
-    // Purpose
-    _drawText(canvas, 'Purpose: ${data.purpose}', contentX, contentY,
-        fontSize: 22, color: const Color(0xFF424242));
-
-    // QR Code (bottom-left)
     if (data.qrData != null && data.qrData!.isNotEmpty) {
-      const double qrSize = 130;
-      final qrY = badgeHeight - qrSize - padding;
-
       final qrPainter = QrPainter(
         data: data.qrData!,
         version: QrVersions.auto,
@@ -155,16 +85,234 @@ class BadgeGenerator {
         eyeStyle: const QrEyeStyle(color: Color(0xFF000000)),
         dataModuleStyle: const QrDataModuleStyle(color: Color(0xFF000000)),
       );
-
       final qrImage = await qrPainter.toImage(qrSize);
-      canvas.drawImage(qrImage, Offset(padding, qrY), Paint());
+      canvas.drawImage(qrImage, Offset(qrX, qrY), Paint());
     }
 
-    // Finalize
+    // =================================================================
+    // RIGHT COLUMN: ANSR branding + visitor info
+    // =================================================================
+
+    // Official ANSR logo (includes sunburst + "ANSR" + "BETTER OUTCOMES")
+    // Centered horizontally, vertically aligned to upper portion of photo
+    final double photoCenterY = photoY + photoSize / 2;
+
+    if (logoImage != null) {
+      final double logoAspect = logoImage.width / logoImage.height;
+      const double logoW = 480;
+      final double logoH = logoW / logoAspect;
+
+      final double logoX = rightColX + (rightColW - logoW) / 2;
+      final double logoY = photoCenterY - logoH / 2 - 30;
+
+      canvas.drawImageRect(
+        logoImage,
+        Rect.fromLTWH(
+            0, 0, logoImage.width.toDouble(), logoImage.height.toDouble()),
+        Rect.fromLTWH(logoX, logoY, logoW, logoH),
+        Paint()..filterQuality = FilterQuality.high,
+      );
+    }
+
+    // Visitor info — right column, vertically centered in lower half
+    // Shifted right with extra padding, and positioned higher
+    final double textLeftPad = rightColX + 20;
+    final double textMaxW = rightColW - 20;
+    double rY = photoCenterY + photoSize * 0.28; // starts just below photo center
+
+    // Visitor Name (large, bold)
+    rY = _drawText(canvas, data.visitorName, textLeftPad, rY,
+        fontSize: 72, fontWeight: FontWeight.bold, maxWidth: textMaxW);
+    rY += 20;
+
+    // Date/Time
+    rY = _drawText(canvas, data.dateTime, textLeftPad, rY,
+        fontSize: 50, color: const Color(0xFF444444), maxWidth: textMaxW);
+    rY += 16;
+
+    // Meeting
+    rY = _drawText(canvas, 'Meeting: ${data.whomToMeet}', textLeftPad, rY,
+        fontSize: 50, fontWeight: FontWeight.w600, maxWidth: textMaxW);
+    rY += 16;
+
+    // Purpose
+    _drawText(canvas, 'Purpose: ${data.purpose}', textLeftPad, rY,
+        fontSize: 50, fontWeight: FontWeight.w600, maxWidth: textMaxW);
+
+    // --- Generate landscape image ---
     final picture = recorder.endRecording();
-    final img = await picture.toImage(badgeWidth.toInt(), badgeHeight.toInt());
-    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+    final landscapeImg = await picture.toImage(W.toInt(), H.toInt());
+
+    // --- Rotate 90° CW for the 62mm roll feed direction ---
+    const double rotW = H; // 720
+    const double rotH = W; // 1060
+    final rotRecorder = ui.PictureRecorder();
+    final rotCanvas = Canvas(rotRecorder, Rect.fromLTWH(0, 0, rotW, rotH));
+    rotCanvas.translate(rotW, 0);
+    rotCanvas.rotate(3.14159265 / 2);
+    rotCanvas.drawImage(landscapeImg, Offset.zero, Paint());
+
+    final rotPicture = rotRecorder.endRecording();
+    final rotImg = await rotPicture.toImage(rotW.toInt(), rotH.toInt());
+    final byteData = await rotImg.toByteData(format: ui.ImageByteFormat.png);
     return byteData!.buffer.asUint8List();
+  }
+
+  static Future<ui.Image?> _loadPhoto(BadgeData data) async {
+    if (data.photoFile != null) {
+      debugPrint('[BadgeGen] Trying photoFile: ${data.photoFile!.path}');
+      try {
+        if (data.photoFile!.existsSync()) {
+          final bytes = await data.photoFile!.readAsBytes();
+          debugPrint('[BadgeGen] Read ${bytes.length} bytes from file');
+          return await _decodeImage(bytes);
+        }
+      } catch (e) {
+        debugPrint('[BadgeGen] ERROR reading photoFile: $e');
+      }
+    }
+
+    if (data.photoUrl != null && data.photoUrl!.isNotEmpty) {
+      debugPrint('[BadgeGen] Downloading photo from URL');
+      try {
+        final client = HttpClient();
+        final request = await client.getUrl(Uri.parse(data.photoUrl!));
+        final response = await request.close();
+        final bytes = await consolidateHttpClientResponseBytes(response);
+        debugPrint('[BadgeGen] Downloaded ${bytes.length} bytes');
+        final img = await _decodeImage(bytes);
+        debugPrint('[BadgeGen] Photo decoded: ${img.width}x${img.height}');
+        client.close();
+        return img;
+      } catch (e) {
+        debugPrint('[BadgeGen] ERROR downloading photo: $e');
+      }
+    }
+
+    debugPrint('[BadgeGen] No photo available');
+    return null;
+  }
+
+  static Future<void> _drawCircularPhoto(
+      Canvas canvas, ui.Image photo, double x, double y, double size) async {
+    final center = Offset(x + size / 2, y + size / 2);
+
+    // Dither the photo for proper halftone rendering on thermal printer
+    final dithered = await _ditherImage(photo);
+
+    canvas.save();
+    canvas.clipPath(Path()
+      ..addOval(Rect.fromCenter(center: center, width: size, height: size)));
+
+    final imgW = dithered.width.toDouble();
+    final imgH = dithered.height.toDouble();
+    final minDim = imgW < imgH ? imgW : imgH;
+    final scale = size / minDim;
+    final drawW = imgW * scale;
+    final drawH = imgH * scale;
+    canvas.drawImageRect(
+      dithered,
+      Rect.fromLTWH(0, 0, imgW, imgH),
+      Rect.fromLTWH(
+          x + (size - drawW) / 2, y + (size - drawH) / 2, drawW, drawH),
+      Paint()..filterQuality = FilterQuality.high,
+    );
+    canvas.restore();
+
+    canvas.drawOval(
+      Rect.fromCenter(center: center, width: size, height: size),
+      Paint()
+        ..color = const Color(0xFF005465)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4,
+    );
+  }
+
+  /// Floyd-Steinberg dithering: converts a photo to a halftone black-and-white
+  /// image that looks like the Vizmo badge (newspaper-style dots).
+  static Future<ui.Image> _ditherImage(ui.Image src) async {
+    final w = src.width;
+    final h = src.height;
+    final byteData = await src.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final pixels = byteData!.buffer.asUint8List();
+
+    // Convert to grayscale with reduced contrast and brightness boost
+    // to preserve face detail and background in thermal dithering
+    final gray = Float64List(w * h);
+    for (int i = 0; i < w * h; i++) {
+      final r = pixels[i * 4];
+      final g = pixels[i * 4 + 1];
+      final b = pixels[i * 4 + 2];
+      gray[i] = (0.299 * r + 0.587 * g + 0.114 * b + 15).clamp(0, 255);
+    }
+
+    // Floyd-Steinberg dithering
+    for (int y = 0; y < h; y++) {
+      for (int x = 0; x < w; x++) {
+        final idx = y * w + x;
+        final oldVal = gray[idx];
+        final newVal = oldVal > 128 ? 255.0 : 0.0;
+        gray[idx] = newVal;
+        final err = oldVal - newVal;
+
+        if (x + 1 < w) gray[idx + 1] += err * 7 / 16;
+        if (y + 1 < h) {
+          if (x > 0) gray[(y + 1) * w + x - 1] += err * 3 / 16;
+          gray[(y + 1) * w + x] += err * 5 / 16;
+          if (x + 1 < w) gray[(y + 1) * w + x + 1] += err * 1 / 16;
+        }
+      }
+    }
+
+    // Write dithered result back to RGBA
+    final output = Uint8List(w * h * 4);
+    for (int i = 0; i < w * h; i++) {
+      final v = gray[i].clamp(0, 255).toInt();
+      output[i * 4] = v;
+      output[i * 4 + 1] = v;
+      output[i * 4 + 2] = v;
+      output[i * 4 + 3] = 255;
+    }
+
+    final descriptor = ui.ImageDescriptor.raw(
+      await ui.ImmutableBuffer.fromUint8List(output),
+      width: w,
+      height: h,
+      pixelFormat: ui.PixelFormat.rgba8888,
+    );
+    final codec = await descriptor.instantiateCodec();
+    final frame = await codec.getNextFrame();
+    return frame.image;
+  }
+
+  static void _drawPhotoPlaceholder(
+      Canvas canvas, double x, double y, double size) {
+    final center = Offset(x + size / 2, y + size / 2);
+    canvas.drawOval(
+      Rect.fromCenter(center: center, width: size, height: size),
+      Paint()..color = const Color(0xFFE0E0E0),
+    );
+    canvas.drawOval(
+      Rect.fromCenter(center: center, width: size, height: size),
+      Paint()
+        ..color = const Color(0xFFBDBDBD)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+    final iconPainter = TextPainter(
+      text: const TextSpan(
+        text: '?',
+        style: TextStyle(
+            fontSize: 80,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF9E9E9E)),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    iconPainter.layout();
+    iconPainter.paint(canvas,
+        Offset(center.dx - iconPainter.width / 2,
+            center.dy - iconPainter.height / 2));
   }
 
   static double _drawText(
@@ -175,6 +323,7 @@ class BadgeGenerator {
     double fontSize = 24,
     FontWeight fontWeight = FontWeight.normal,
     Color color = const Color(0xFF212121),
+    double maxWidth = 500,
   }) {
     final textPainter = TextPainter(
       text: TextSpan(
@@ -187,10 +336,10 @@ class BadgeGenerator {
         ),
       ),
       textDirection: TextDirection.ltr,
-      maxLines: 1,
+      maxLines: 2,
       ellipsis: '...',
     );
-    textPainter.layout(maxWidth: 500);
+    textPainter.layout(maxWidth: maxWidth);
     textPainter.paint(canvas, Offset(x, y));
     return y + textPainter.height;
   }

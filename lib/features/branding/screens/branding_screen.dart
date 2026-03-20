@@ -33,17 +33,28 @@ class BrandingScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Column(
               children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.settings_outlined,
-                      color: Colors.white.withValues(alpha: 0.6),
-                      size: 24,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.settings_outlined,
+                        color: Colors.white.withValues(alpha: 0.6),
+                        size: 24,
+                      ),
+                      onPressed: () => context.go('/printer-settings'),
+                      tooltip: 'Printer Settings',
                     ),
-                    onPressed: () => context.go('/printer-settings'),
-                    tooltip: 'Printer Settings',
-                  ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.logout_rounded,
+                        color: Colors.white.withValues(alpha: 0.6),
+                        size: 24,
+                      ),
+                      onPressed: () => context.go('/checkout'),
+                      tooltip: 'Check Out',
+                    ),
+                  ],
                 ),
                 const Spacer(flex: 2),
                 Container(

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../data/models/kelsa_lead.dart';
 import '../../../shared/providers/app_providers.dart';
 
@@ -93,7 +94,7 @@ class WhomToMeetNotifier extends StateNotifier<WhomToMeetState> {
         isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: userFriendlyError(e));
     }
   }
 

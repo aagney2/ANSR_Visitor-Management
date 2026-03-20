@@ -149,7 +149,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'I hereby declare that the information provided by me is best to my knowledge and can be used by ${config?.clientName ?? "the company"} during my visit. Also I agree to Vizmo\'s terms of service and privacy policy.',
+                            'I hereby declare that the information provided by me is best to my knowledge and can be used by ${config?.clientName ?? "the company"} during my visit.',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: const Color(0xFF616161),
                               height: 1.5,
