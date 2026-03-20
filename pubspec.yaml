@@ -1,7 +1,7 @@
 name: ansr_visitor_management
 description: ANSR Visitor Management - Multi-tenant visitor check-in app built on Kelsa APIs.
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: ^3.11.0
@@ -63,6 +63,7 @@ dev_dependencies:
   freezed: ^2.5.7
   json_serializable: ^6.9.4
   riverpod_generator: ^2.6.3
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -71,3 +72,8 @@ flutter:
     - assets/config/
     - assets/images/
     - .env
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app_icon.png"  # your 1024x1024 icon
