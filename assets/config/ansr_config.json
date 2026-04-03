@@ -12,5 +12,6 @@
   "employeeMasterPipelineId": "13181",
   "apiBaseUrl": "https://kelsa.io",
   "termsUrl": "https://vizmo.co/terms",
-  "privacyUrl": "https://vizmo.co/privacy"
+  "privacyUrl": "https://vizmo.co/privacy",
+  "touchlessCheckinUrl": "https://ansr-visitor-checkin.web.app"
 }

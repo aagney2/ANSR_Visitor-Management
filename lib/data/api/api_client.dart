@@ -8,18 +8,23 @@ class ApiClient {
   late final Dio _dio;
 
   ApiClient({String? baseUrl}) {
+    final headers = <String, dynamic>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+
+    if (!kIsWeb) {
+      headers['X-User-Email'] = dotenv.env['KELSA_USER_EMAIL'] ?? '';
+      headers['X-User-Token'] = dotenv.env['KELSA_USER_TOKEN'] ?? '';
+    }
+
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl ?? '',
       connectTimeout:
           Duration(seconds: AppConstants.apiTimeoutSeconds),
       receiveTimeout:
           Duration(seconds: AppConstants.apiTimeoutSeconds),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-User-Email': dotenv.env['KELSA_USER_EMAIL'] ?? '',
-        'X-User-Token': dotenv.env['KELSA_USER_TOKEN'] ?? '',
-      },
+      headers: headers,
     ));
 
     if (kDebugMode) {

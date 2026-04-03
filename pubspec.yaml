@@ -1,7 +1,7 @@
 name: ansr_visitor_management
 description: ANSR Visitor Management - Multi-tenant visitor check-in app built on Kelsa APIs.
 publish_to: 'none'
-version: 1.0.0+3
+version: 1.0.2+6
 
 environment:
   sdk: ^3.11.0

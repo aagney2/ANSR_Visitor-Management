@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/validators.dart';
 import '../../../shared/providers/app_providers.dart';
+import '../../../shared/widgets/branded_header.dart';
 import '../../../shared/widgets/error_banner.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/section_header.dart';
@@ -67,21 +69,19 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(config?.clientName ?? 'Visitor Management'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => context.go('/'),
-        ),
-      ),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        child: Column(
+          children: [
+            const BrandedHeader(),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 const SectionHeader(
                   title: 'Enter your phone number',
                   subtitle: 'We\'ll use this to find or create your visitor profile',
@@ -167,9 +167,29 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                   isLoading: checkinState.isLoading,
                   icon: Icons.arrow_forward_rounded,
                 ),
-              ],
+                const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
+            if (!kIsWeb)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => context.go('/'),
+                    icon: Icon(Icons.chevron_left, color: theme.colorScheme.primary, size: 20),
+                    label: Text('Back', style: TextStyle(color: theme.colorScheme.primary, fontSize: 15, fontWeight: FontWeight.w500)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.3))),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

@@ -1,11 +1,11 @@
 {
-    "name": "ansr_visitor_management",
-    "short_name": "ansr_visitor_management",
+    "name": "ANSR Visitor Check-In",
+    "short_name": "ANSR Check-In",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#005465",
+    "description": "ANSR Visitor Management - Touchless check-in from your phone",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

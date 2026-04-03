@@ -1,4 +1,3 @@
-import 'package:brother_printer/brother_printer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/services/printer_service.dart';
 
@@ -12,11 +11,11 @@ final savedPrinterProvider = FutureProvider<SavedPrinter?>((ref) async {
 });
 
 final discoveredPrintersProvider =
-    StateNotifierProvider<DiscoveredPrintersNotifier, AsyncValue<List<BrotherDevice>>>(
+    StateNotifierProvider<DiscoveredPrintersNotifier, AsyncValue<List<DiscoveredPrinter>>>(
   (ref) => DiscoveredPrintersNotifier(ref.read(printerServiceProvider)),
 );
 
-class DiscoveredPrintersNotifier extends StateNotifier<AsyncValue<List<BrotherDevice>>> {
+class DiscoveredPrintersNotifier extends StateNotifier<AsyncValue<List<DiscoveredPrinter>>> {
   final PrinterService _service;
 
   DiscoveredPrintersNotifier(this._service) : super(const AsyncValue.data([]));

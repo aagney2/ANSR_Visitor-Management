@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 
 class ClientConfig {
@@ -16,6 +17,7 @@ class ClientConfig {
   final String apiBaseUrl;
   final String termsUrl;
   final String privacyUrl;
+  final String touchlessCheckinUrl;
 
   const ClientConfig({
     required this.clientId,
@@ -32,16 +34,19 @@ class ClientConfig {
     required this.apiBaseUrl,
     required this.termsUrl,
     required this.privacyUrl,
+    required this.touchlessCheckinUrl,
   });
 
+  String get _basePrefix => kIsWeb ? '/proxy' : apiBaseUrl;
+
   String get visitorDatabaseBaseUrl =>
-      '$apiBaseUrl/$visitorDatabasePipelineId/api/v1';
+      '$_basePrefix/$visitorDatabasePipelineId/api/v1';
 
   String get visitorManagementBaseUrl =>
-      '$apiBaseUrl/$visitorManagementPipelineId/api/v1';
+      '$_basePrefix/$visitorManagementPipelineId/api/v1';
 
   String get employeeMasterBaseUrl =>
-      '$apiBaseUrl/$employeeMasterPipelineId/api/v1';
+      '$_basePrefix/$employeeMasterPipelineId/api/v1';
 
   factory ClientConfig.fromJson(Map<String, dynamic> json) {
     return ClientConfig(
@@ -62,6 +67,7 @@ class ClientConfig {
       apiBaseUrl: json['apiBaseUrl'] as String,
       termsUrl: json['termsUrl'] as String,
       privacyUrl: json['privacyUrl'] as String,
+      touchlessCheckinUrl: json['touchlessCheckinUrl'] as String? ?? '',
     );
   }
 

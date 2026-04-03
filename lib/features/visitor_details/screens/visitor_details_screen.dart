@@ -1,10 +1,13 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:signature/signature.dart';
 import '../../../core/utils/validators.dart';
+import '../../../data/services/badge_number_service.dart';
+import '../../../shared/widgets/branded_header.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../features/visitor_checkin/providers/checkin_provider.dart';
@@ -26,7 +29,7 @@ class _VisitorDetailsScreenState extends ConsumerState<VisitorDetailsScreen> {
   late final TextEditingController _serialCtrl;
   late final TextEditingController _badgeCtrl;
 
-  File? _photoFile;
+  Uint8List? _photoBytes;
   String? _savedPhotoUrl;
   bool _signatureCaptured = false;
 
@@ -47,8 +50,17 @@ class _VisitorDetailsScreenState extends ConsumerState<VisitorDetailsScreen> {
     _locationCtrl = TextEditingController(text: state.location ?? '');
     _serialCtrl = TextEditingController(text: state.serialNumber ?? '');
     _badgeCtrl = TextEditingController(text: state.badgeNumber ?? '');
-    _photoFile = state.photoFile;
+    _photoBytes = state.photoBytes;
     _savedPhotoUrl = state.visitor?.photoUrl;
+    _assignBadgeNumber();
+  }
+
+  Future<void> _assignBadgeNumber() async {
+    if (_badgeCtrl.text.isNotEmpty) return;
+    final badge = await BadgeNumberService.peekNextBadgeNumber();
+    if (mounted) {
+      setState(() => _badgeCtrl.text = badge);
+    }
   }
 
   @override
@@ -67,20 +79,22 @@ class _VisitorDetailsScreenState extends ConsumerState<VisitorDetailsScreen> {
     final picker = ImagePicker();
     final image = await picker.pickImage(
       source: ImageSource.camera,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 85,
+      preferredCameraDevice: CameraDevice.front,
+      maxWidth: kIsWeb ? 640 : 1024,
+      maxHeight: kIsWeb ? 640 : 1024,
+      imageQuality: kIsWeb ? 60 : 85,
     );
     if (image != null) {
-      setState(() => _photoFile = File(image.path));
-      ref.read(checkinProvider.notifier).setPhotoFile(_photoFile!);
+      final bytes = await image.readAsBytes();
+      setState(() => _photoBytes = bytes);
+      ref.read(checkinProvider.notifier).setPhoto(bytes, image.name);
     }
   }
 
   String? _photoError;
   String? _signatureError;
 
-  bool get _hasPhoto => _photoFile != null || _savedPhotoUrl != null;
+  bool get _hasPhoto => _photoBytes != null || _savedPhotoUrl != null;
 
   Future<void> _proceed() async {
     final formValid = _formKey.currentState!.validate();
@@ -92,6 +106,8 @@ class _VisitorDetailsScreenState extends ConsumerState<VisitorDetailsScreen> {
 
     if (!formValid || !_hasPhoto || !_signatureCaptured) return;
 
+    final badgeNumber = await BadgeNumberService.getNextBadgeNumber();
+
     final notifier = ref.read(checkinProvider.notifier);
     notifier.updateDetails(
       name: _nameCtrl.text.trim(),
@@ -99,7 +115,7 @@ class _VisitorDetailsScreenState extends ConsumerState<VisitorDetailsScreen> {
       company: _companyCtrl.text.trim(),
       location: _locationCtrl.text.trim(),
       serialNumber: _serialCtrl.text.trim(),
-      badgeNumber: _badgeCtrl.text.trim(),
+      badgeNumber: badgeNumber,
     );
 
     final sigBytes = await _sigController.toPngBytes();
@@ -122,26 +138,17 @@ class _VisitorDetailsScreenState extends ConsumerState<VisitorDetailsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Visitor Details'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () {
-            final state = ref.read(checkinProvider);
-            if (state.selectedWhomToMeet == null) {
-              context.go('/returning-visitor');
-            } else {
-              context.go('/employee-select');
-            }
-          },
-        ),
-      ),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(24),
-            children: [
+        child: Column(
+          children: [
+            const BrandedHeader(),
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  children: [
               const SectionHeader(
                 title: 'Your details',
                 subtitle: 'Fill in or update your information',
@@ -181,8 +188,9 @@ class _VisitorDetailsScreenState extends ConsumerState<VisitorDetailsScreen> {
               const SizedBox(height: 16),
               _buildField(
                 controller: _badgeCtrl,
-                label: 'Badge Number',
+                label: 'Badge Number (Auto)',
                 icon: Icons.badge_outlined,
+                readOnly: true,
               ),
               const SizedBox(height: 28),
               // Photo capture
@@ -206,11 +214,11 @@ class _VisitorDetailsScreenState extends ConsumerState<VisitorDetailsScreen> {
                           : const Color(0xFFE0E0E0),
                     ),
                   ),
-                  child: _photoFile != null
+                  child: _photoBytes != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(15),
-                          child: Image.file(
-                            _photoFile!,
+                          child: Image.memory(
+                            _photoBytes!,
                             fit: BoxFit.contain,
                             width: double.infinity,
                           ),
@@ -385,8 +393,33 @@ class _VisitorDetailsScreenState extends ConsumerState<VisitorDetailsScreen> {
                 );
               }),
               const SizedBox(height: 16),
-            ],
-          ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () {
+                    final state = ref.read(checkinProvider);
+                    if (state.selectedWhomToMeet == null) {
+                      context.go('/returning-visitor');
+                    } else {
+                      context.go('/employee-select');
+                    }
+                  },
+                  icon: Icon(Icons.chevron_left, color: Theme.of(context).colorScheme.primary, size: 20),
+                  label: Text('Back', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 15, fontWeight: FontWeight.w500)),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3))),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -398,14 +431,21 @@ class _VisitorDetailsScreenState extends ConsumerState<VisitorDetailsScreen> {
     required IconData icon,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    bool readOnly = false,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      readOnly: readOnly,
+      style: readOnly
+          ? TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600)
+          : null,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
+        filled: readOnly,
+        fillColor: readOnly ? Colors.grey.shade100 : null,
       ),
     );
   }

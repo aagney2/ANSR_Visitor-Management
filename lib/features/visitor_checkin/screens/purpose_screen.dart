@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../data/models/kelsa_field.dart';
-import '../../../shared/widgets/primary_button.dart';
-import '../../../shared/widgets/section_header.dart';
 import '../providers/checkin_provider.dart';
 import '../providers/visitor_type_provider.dart';
 
@@ -18,123 +16,163 @@ class PurposeScreen extends ConsumerStatefulWidget {
 class _PurposeScreenState extends ConsumerState<PurposeScreen> {
   KelsaFieldOption? _selected;
 
-  static const _purposeIcons = {
-    'visitor': Icons.person_outline,
-    'interview': Icons.work_outline,
-    'new-joiner': Icons.person_add_outlined,
-    'new joiner': Icons.person_add_outlined,
-    'employee': Icons.badge_outlined,
-    'client': Icons.handshake_outlined,
-    'contractor': Icons.engineering_outlined,
-    'vendor': Icons.store_outlined,
-    'meeting': Icons.groups_outlined,
-    'others': Icons.more_horiz_outlined,
-  };
-
-  IconData _iconFor(String name) {
-    return _purposeIcons[name.toLowerCase()] ?? Icons.help_outline;
-  }
-
   @override
   Widget build(BuildContext context) {
     final vtState = ref.watch(visitorTypeProvider);
     final checkinState = ref.watch(checkinProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Purpose of Visit'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => context.go(
-            checkinState.isReturningVisitor ? '/returning-visitor' : '/phone',
-          ),
-        ),
-      ),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SectionHeader(
-                title: 'Purpose of your visit',
-                subtitle: 'Please select the reason for your visit today',
+        child: Column(
+          children: [
+            // Header: Kelsa left, ANSR logo right
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Image.asset(
+                    'assets/images/kelsa_logo.png',
+                    height: 24,
+                    errorBuilder: (_, __, ___) => Text(
+                      'Kelsa',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  Image.asset(
+                    'assets/images/ansr_logo_full.png',
+                    height: 28,
+                    errorBuilder: (_, __, ___) => Text(
+                      'ANSR',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: vtState.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : vtState.error != null
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(vtState.error!,
-                                    textAlign: TextAlign.center),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: () => ref
-                                      .read(visitorTypeProvider.notifier)
-                                      .reload(),
-                                  child: const Text('Retry'),
-                                ),
-                              ],
-                            ),
-                          )
-                        : GridView.builder(
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
+              'Purpose of your visit',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: const Color(0xFF333333),
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Purpose options
+            Expanded(
+              child: vtState.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : vtState.error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(vtState.error!,
+                                  textAlign: TextAlign.center),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () => ref
+                                    .read(visitorTypeProvider.notifier)
+                                    .reload(),
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: GridView.builder(
+                            shrinkWrap: true,
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
                               mainAxisSpacing: 14,
                               crossAxisSpacing: 14,
-                              childAspectRatio: 1.5,
+                              childAspectRatio: 2.8,
                             ),
                             itemCount: vtState.options.length,
                             itemBuilder: (context, index) {
                               final option = vtState.options[index];
-                              final isSelected =
-                                  _selected?.id == option.id;
+                              final isSelected = _selected?.id == option.id;
                               return _PurposeTile(
                                 purpose: option.name,
-                                icon: _iconFor(option.name),
                                 isSelected: isSelected,
-                                onTap: () =>
-                                    setState(() => _selected = option),
+                                onTap: () {
+                                  setState(() => _selected = option);
+                                  ref
+                                      .read(checkinProvider.notifier)
+                                      .setPurpose(option.name,
+                                          optionId: option.id);
+                                  ref
+                                      .read(checkinProvider.notifier)
+                                      .proceedFromPurpose();
+                                  context.go('/employee-select');
+                                },
                               )
                                   .animate()
                                   .fadeIn(
                                     delay:
                                         Duration(milliseconds: 80 * index),
                                     duration: 300.ms,
-                                  )
-                                  .scale(
-                                    begin: const Offset(0.9, 0.9),
-                                    end: const Offset(1, 1),
-                                    delay:
-                                        Duration(milliseconds: 80 * index),
                                   );
                             },
                           ),
+                        ),
+            ),
+
+            // Back button at bottom left
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => context.go(
+                    checkinState.isReturningVisitor
+                        ? '/returning-visitor'
+                        : '/phone',
+                  ),
+                  icon: Icon(
+                    Icons.chevron_left,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  label: Text(
+                    'Back',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(height: 16),
-              PrimaryButton(
-                label: 'Continue',
-                icon: Icons.arrow_forward_rounded,
-                onPressed: _selected != null
-                    ? () {
-                        ref
-                            .read(checkinProvider.notifier)
-                            .setPurpose(_selected!.name,
-                                optionId: _selected!.id);
-                        ref
-                            .read(checkinProvider.notifier)
-                            .proceedFromPurpose();
-                        context.go('/employee-select');
-                      }
-                    : null,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -143,13 +181,11 @@ class _PurposeScreenState extends ConsumerState<PurposeScreen> {
 
 class _PurposeTile extends StatelessWidget {
   final String purpose;
-  final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _PurposeTile({
     required this.purpose,
-    required this.icon,
     required this.isSelected,
     required this.onTap,
   });
@@ -159,45 +195,32 @@ class _PurposeTile extends StatelessWidget {
     final theme = Theme.of(context);
     return Material(
       color: isSelected
-          ? theme.colorScheme.primary.withValues(alpha: 0.08)
-          : Colors.white,
-      borderRadius: BorderRadius.circular(16),
+          ? theme.colorScheme.primary.withValues(alpha: 0.12)
+          : const Color(0xFFEDF6F8),
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected
                   ? theme.colorScheme.primary
-                  : const Color(0xFFE8E8E8),
+                  : const Color(0xFFCCE3E8),
               width: isSelected ? 2 : 1,
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 32,
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : const Color(0xFF757575),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                purpose,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : const Color(0xFF424242),
-                ),
-              ),
-            ],
+          alignment: Alignment.center,
+          child: Text(
+            purpose,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : const Color(0xFF333333),
+            ),
           ),
         ),
       ),

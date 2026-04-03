@@ -17,7 +17,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final MobileScannerController _scannerController = MobileScannerController(
     detectionSpeed: DetectionSpeed.normal,
-    facing: CameraFacing.back,
+    facing: CameraFacing.front,
   );
 
   bool _isProcessing = false;
@@ -107,6 +107,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => context.go('/'),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.cameraswitch_rounded, size: 26),
+            tooltip: 'Flip Camera',
+            onPressed: () => _scannerController.switchCamera(),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Stack(
         children: [

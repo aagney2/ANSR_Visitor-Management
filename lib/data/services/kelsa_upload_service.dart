@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -25,18 +25,24 @@ class AttachmentValue {
 class KelsaUploadService {
   late final Dio _kelsaDio;
   late final Dio _s3Dio;
+  late final Dio _webUploadDio;
 
   KelsaUploadService({required String apiBaseUrl}) {
+    final baseUrl = kIsWeb ? '/proxy' : apiBaseUrl;
+    final headers = <String, dynamic>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    if (!kIsWeb) {
+      headers['X-User-Email'] = dotenv.env['KELSA_USER_EMAIL'] ?? '';
+      headers['X-User-Token'] = dotenv.env['KELSA_USER_TOKEN'] ?? '';
+    }
+
     _kelsaDio = Dio(BaseOptions(
-      baseUrl: apiBaseUrl,
+      baseUrl: baseUrl,
       connectTimeout: Duration(seconds: AppConstants.apiTimeoutSeconds),
       receiveTimeout: Duration(seconds: AppConstants.apiTimeoutSeconds),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-User-Email': dotenv.env['KELSA_USER_EMAIL'] ?? '',
-        'X-User-Token': dotenv.env['KELSA_USER_TOKEN'] ?? '',
-      },
+      headers: headers,
     ));
 
     if (kDebugMode) {
@@ -51,6 +57,38 @@ class KelsaUploadService {
       connectTimeout: Duration(seconds: AppConstants.apiTimeoutSeconds),
       receiveTimeout: Duration(seconds: AppConstants.apiTimeoutSeconds),
     ));
+
+    _webUploadDio = Dio(BaseOptions(
+      baseUrl: kIsWeb ? '' : apiBaseUrl,
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(seconds: 60),
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+    ));
+  }
+
+  /// Upload via server-side proxy (web only) — avoids S3 CORS issues
+  Future<AttachmentValue> _uploadViaProxy({
+    required Uint8List fileBytes,
+    required String filename,
+    required String contentType,
+    required String pipelineId,
+  }) async {
+    final response = await _webUploadDio.post<Map<String, dynamic>>(
+      '/upload',
+      data: {
+        'fileBase64': base64Encode(fileBytes),
+        'filename': filename,
+        'contentType': contentType,
+        'pipelineId': pipelineId,
+      },
+    );
+
+    final data = response.data!;
+    return AttachmentValue(
+      url: data['url'] as String,
+      size: data['size'] as int,
+      uploadId: data['upload_id'] as int,
+    );
   }
 
   /// Full 3-step attachment upload: presigned POST → S3 upload → register.
@@ -60,7 +98,15 @@ class KelsaUploadService {
     required String contentType,
     required String pipelineId,
   }) async {
-    // Step 1: Get presigned POST data from Kelsa
+    if (kIsWeb) {
+      return _uploadViaProxy(
+        fileBytes: fileBytes,
+        filename: filename,
+        contentType: contentType,
+        pipelineId: pipelineId,
+      );
+    }
+
     final presignedResponse = await _kelsaDio.get<Map<String, dynamic>>(
       '/api/v1/uploads/presigned_post',
       queryParameters: {
@@ -74,12 +120,10 @@ class KelsaUploadService {
     final s3Url = presignedData['url'] as String;
     final fields = Map<String, String>.from(presignedData['fields'] as Map);
 
-    // Step 2: Upload to S3 via multipart form POST
     final formData = FormData();
     for (final entry in fields.entries) {
       formData.fields.add(MapEntry(entry.key, entry.value));
     }
-    // File must be the last field
     formData.files.add(MapEntry(
       'file',
       MultipartFile.fromBytes(fileBytes,
@@ -95,7 +139,6 @@ class KelsaUploadService {
       ),
     );
 
-    // Parse <Location> from the S3 XML response
     final locationMatch = RegExp(r'<Location>(.*?)</Location>')
         .firstMatch(s3Response.data ?? '');
     if (locationMatch == null) {
@@ -103,7 +146,6 @@ class KelsaUploadService {
     }
     final fileUrl = Uri.decodeFull(locationMatch.group(1)!);
 
-    // Step 3: Register the upload in Kelsa
     final registerResponse = await _kelsaDio.post<Map<String, dynamic>>(
       '/api/v1/uploads',
       data: {
@@ -125,14 +167,12 @@ class KelsaUploadService {
     );
   }
 
-  /// Upload a photo file to a specific pipeline.
-  Future<AttachmentValue> uploadPhoto({
-    required File file,
+  /// Upload photo bytes to a specific pipeline.
+  Future<AttachmentValue> uploadPhotoBytes({
+    required Uint8List bytes,
+    required String filename,
     required String pipelineId,
   }) async {
-    final bytes = await file.readAsBytes();
-    final filename = file.path.split('/').last;
-
     String contentType = 'image/jpeg';
     if (filename.endsWith('.png')) {
       contentType = 'image/png';

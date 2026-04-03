@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/branded_header.dart';
 import '../../../shared/widgets/error_banner.dart';
 import '../../../shared/widgets/info_card.dart';
 import '../../../shared/widgets/loading_overlay.dart';
@@ -23,20 +24,18 @@ class ReviewScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Review & Submit'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => context.go('/details'),
-        ),
-      ),
-      body: LoadingOverlay(
-        isLoading: state.isLoading,
-        message: state.submitProgress ?? 'Submitting...',
-        child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(24),
-            children: [
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const BrandedHeader(),
+            Expanded(
+              child: LoadingOverlay(
+                isLoading: state.isLoading,
+                message: state.submitProgress ?? 'Submitting...',
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  children: [
               const SectionHeader(
                 title: 'Review your details',
                 subtitle: 'Please confirm everything looks correct',
@@ -141,7 +140,7 @@ class ReviewScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               // Photo preview
-              if (state.photoFile != null) ...[
+              if (state.photoBytes != null) ...[
                 Text(
                   'Photo',
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -158,8 +157,8 @@ class ReviewScreen extends ConsumerWidget {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.file(
-                      state.photoFile!,
+                    child: Image.memory(
+                      state.photoBytes!,
                       width: double.infinity,
                       fit: BoxFit.contain,
                     ),
@@ -202,8 +201,26 @@ class ReviewScreen extends ConsumerWidget {
                     : () => ref.read(checkinProvider.notifier).submit(),
               ),
               const SizedBox(height: 16),
-            ],
-          ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => context.go('/details'),
+                  icon: Icon(Icons.chevron_left, color: theme.colorScheme.primary, size: 20),
+                  label: Text('Back', style: TextStyle(color: theme.colorScheme.primary, fontSize: 15, fontWeight: FontWeight.w500)),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.3))),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

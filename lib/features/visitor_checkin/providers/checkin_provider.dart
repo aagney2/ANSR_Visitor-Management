@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/errors/app_exception.dart';
@@ -33,7 +32,8 @@ class CheckinState {
   final String? location;
   final String? serialNumber;
   final String? badgeNumber;
-  final File? photoFile;
+  final Uint8List? photoBytes;
+  final String? photoFilename;
   final AttachmentValue? photoAttachment;
   final Uint8List? signatureBytes;
   final AttachmentValue? signatureAttachment;
@@ -59,7 +59,8 @@ class CheckinState {
     this.location,
     this.serialNumber,
     this.badgeNumber,
-    this.photoFile,
+    this.photoBytes,
+    this.photoFilename,
     this.photoAttachment,
     this.signatureBytes,
     this.signatureAttachment,
@@ -86,7 +87,8 @@ class CheckinState {
     String? location,
     String? serialNumber,
     String? badgeNumber,
-    File? photoFile,
+    Uint8List? photoBytes,
+    String? photoFilename,
     AttachmentValue? photoAttachment,
     Uint8List? signatureBytes,
     AttachmentValue? signatureAttachment,
@@ -112,7 +114,8 @@ class CheckinState {
       location: location ?? this.location,
       serialNumber: serialNumber ?? this.serialNumber,
       badgeNumber: badgeNumber ?? this.badgeNumber,
-      photoFile: photoFile ?? this.photoFile,
+      photoBytes: photoBytes ?? this.photoBytes,
+      photoFilename: photoFilename ?? this.photoFilename,
       photoAttachment: photoAttachment ?? this.photoAttachment,
       signatureBytes: signatureBytes ?? this.signatureBytes,
       signatureAttachment: signatureAttachment ?? this.signatureAttachment,
@@ -234,8 +237,8 @@ class CheckinNotifier extends StateNotifier<CheckinState> {
     );
   }
 
-  void setPhotoFile(File file) =>
-      state = state.copyWith(photoFile: file);
+  void setPhoto(Uint8List bytes, String filename) =>
+      state = state.copyWith(photoBytes: bytes, photoFilename: filename);
 
   void setSignatureBytes(Uint8List bytes) =>
       state = state.copyWith(signatureBytes: bytes);
@@ -258,10 +261,10 @@ class CheckinNotifier extends StateNotifier<CheckinState> {
       final uploadService = _ref.read(kelsaUploadServiceProvider);
       final repo = _ref.read(visitorRepositoryProvider);
 
-      // Upload photo + signature in parallel
-      final photoFuture = state.photoFile != null
-          ? uploadService.uploadPhoto(
-              file: state.photoFile!,
+      final photoFuture = state.photoBytes != null
+          ? uploadService.uploadPhotoBytes(
+              bytes: state.photoBytes!,
+              filename: state.photoFilename ?? 'photo.jpg',
               pipelineId: config.visitorDatabasePipelineId,
             )
           : Future<AttachmentValue?>.value(null);
@@ -273,7 +276,6 @@ class CheckinNotifier extends StateNotifier<CheckinState> {
             )
           : Future<AttachmentValue?>.value(null);
 
-      // Also pre-warm custom fields while uploads are in progress
       final dbFieldsFuture = repo.getDatabaseFields();
       final mgmtFieldsFuture = repo.getManagementFields();
 
@@ -295,12 +297,10 @@ class CheckinNotifier extends StateNotifier<CheckinState> {
 
       final visitor = state.toVisitor();
 
-      // Create/update in Visitor Database
       final dbId = await repo.createOrUpdateVisitorDatabase(visitor);
 
       state = state.copyWith(submitProgress: 'Creating check-in entry...');
 
-      // Create visit entry in Visitor Management
       final visitId = await repo.createVisitEntry(
         visitor: visitor,
         databaseLeadId: dbId,

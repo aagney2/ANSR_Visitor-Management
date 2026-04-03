@@ -1,4 +1,3 @@
-import 'package:brother_printer/brother_printer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -31,9 +30,9 @@ class _PrinterSettingsScreenState
     if (mounted) setState(() => _isScanning = false);
   }
 
-  Future<void> _selectPrinter(BrotherDevice device) async {
+  Future<void> _selectPrinter(DiscoveredPrinter device) async {
     final service = ref.read(printerServiceProvider);
-    await service.saveBrotherDevice(device);
+    await service.saveDiscoveredPrinter(device);
     ref.invalidate(savedPrinterProvider);
 
     if (mounted) {
@@ -129,7 +128,6 @@ class _PrinterSettingsScreenState
                   'Configure the Brother QL-820NWB for badge printing',
             ),
 
-            // Currently configured printer
             savedPrinter.when(
               data: (printer) {
                 if (printer == null) {
@@ -167,8 +165,8 @@ class _PrinterSettingsScreenState
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle,
-                          color: const Color(0xFF2E7D32), size: 28),
+                      const Icon(Icons.check_circle,
+                          color: Color(0xFF2E7D32), size: 28),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -213,7 +211,6 @@ class _PrinterSettingsScreenState
 
             const SizedBox(height: 28),
 
-            // Available Printers section
             Row(
               children: [
                 Text(
@@ -289,7 +286,6 @@ class _PrinterSettingsScreenState
                   children: devices.map((device) {
                     final currentIp = savedPrinter.valueOrNull?.ipAddress;
                     final isSelected = device.ipAddress == currentIp;
-                    final sourceLabel = _sourceLabel(device.source);
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
@@ -331,7 +327,7 @@ class _PrinterSettingsScreenState
                           ),
                         ),
                         subtitle: Text(
-                          '${device.ipAddress ?? "N/A"} · $sourceLabel',
+                          '${device.ipAddress ?? "N/A"} · ${device.source}',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: const Color(0xFF757575),
                           ),
@@ -378,7 +374,6 @@ class _PrinterSettingsScreenState
 
             const SizedBox(height: 24),
 
-            // Manual IP entry as fallback
             OutlinedButton.icon(
               icon: const Icon(Icons.edit, size: 18),
               label: const Text('Enter IP Address Manually'),
@@ -425,18 +420,5 @@ class _PrinterSettingsScreenState
         ),
       ),
     );
-  }
-
-  String _sourceLabel(BrotherDeviceSource source) {
-    switch (source) {
-      case BrotherDeviceSource.network:
-        return 'WiFi';
-      case BrotherDeviceSource.bluetooth:
-        return 'Bluetooth';
-      case BrotherDeviceSource.ble:
-        return 'BLE';
-      case BrotherDeviceSource.usb:
-        return 'USB';
-    }
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../shared/providers/app_providers.dart';
 
 class BrandingScreen extends ConsumerWidget {
@@ -12,159 +13,231 @@ class BrandingScreen extends ConsumerWidget {
     final config = ref.watch(clientConfigProvider);
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
+    final touchlessUrl = config?.touchlessCheckinUrl ?? '';
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              theme.colorScheme.primary,
-              theme.colorScheme.primary.withValues(alpha: 0.85),
-              theme.colorScheme.primary.withValues(alpha: 0.95),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.settings_outlined,
-                        color: Colors.white.withValues(alpha: 0.6),
-                        size: 24,
-                      ),
-                      onPressed: () => context.go('/printer-settings'),
-                      tooltip: 'Printer Settings',
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.settings_outlined,
+                      color: Colors.grey.shade400,
+                      size: 24,
                     ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.logout_rounded,
-                        color: Colors.white.withValues(alpha: 0.6),
-                        size: 24,
-                      ),
-                      onPressed: () => context.go('/checkout'),
-                      tooltip: 'Check Out',
-                    ),
-                  ],
-                ),
-                const Spacer(flex: 2),
-                Container(
-                  width: size.width * 0.35,
-                  height: size.width * 0.35,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(32),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+                    onPressed: () => context.go('/printer-settings'),
+                    tooltip: 'Printer Settings',
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(32),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Image.asset(
-                        config?.logoAsset ?? 'assets/images/ansr_logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => Center(
-                          child: Text(
-                            config?.clientName.substring(0, 1).toUpperCase() ?? 'V',
-                            style: TextStyle(
-                              fontSize: 64,
-                              fontWeight: FontWeight.w800,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
+                  const SizedBox(width: 48),
+                ],
+              ),
+            ),
+
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  children: [
+                    SizedBox(height: size.height * 0.03),
+
+                    Image.asset(
+                      'assets/images/ansr_logo_full.png',
+                      width: size.width * 0.55,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Text(
+                        config?.clientName ?? 'ANSR',
+                        style: TextStyle(
+                          fontSize: 40,
+                          fontWeight: FontWeight.w800,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
-                    ),
-                  ),
-                ).animate().fadeIn(duration: 600.ms).scale(
-                      begin: const Offset(0.8, 0.8),
-                      end: const Offset(1, 1),
-                      curve: Curves.easeOutBack,
-                    ),
-                const SizedBox(height: 40),
-                Text(
-                  'Welcome to',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 1,
-                  ),
-                ).animate().fadeIn(delay: 200.ms, duration: 500.ms),
-                const SizedBox(height: 8),
-                Text(
-                  config?.clientName ?? 'Visitor Management',
-                  style: theme.textTheme.headlineLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
-                ).animate().fadeIn(delay: 400.ms, duration: 500.ms),
-                const SizedBox(height: 12),
-                Text(
-                  'Visitor Management System',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontWeight: FontWeight.w400,
-                  ),
-                ).animate().fadeIn(delay: 500.ms, duration: 500.ms),
-                const Spacer(flex: 3),
-                SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: theme.colorScheme.primary,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+                    ).animate().fadeIn(duration: 600.ms),
+
+                    const SizedBox(height: 24),
+
+                    Text(
+                      'Welcomes you',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: const Color(0xFF333333),
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0.3,
                       ),
-                      textStyle: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                    ).animate().fadeIn(delay: 200.ms, duration: 500.ms),
+
+                    const SizedBox(height: 28),
+
+                    if (touchlessUrl.isNotEmpty) ...[
+                      Text(
+                        'Scan QR',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF666666),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
+
+                      const SizedBox(height: 16),
+
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: QrImageView(
+                          data: touchlessUrl,
+                          version: QrVersions.auto,
+                          size: size.width * 0.4,
+                          backgroundColor: Colors.white,
+                          eyeStyle: const QrEyeStyle(
+                            eyeShape: QrEyeShape.square,
+                            color: Color(0xFF000000),
+                          ),
+                          dataModuleStyle: const QrDataModuleStyle(
+                            dataModuleShape: QrDataModuleShape.square,
+                            color: Color(0xFF000000),
+                          ),
+                        ),
+                      ).animate().fadeIn(delay: 400.ms, duration: 500.ms),
+
+                      const SizedBox(height: 16),
+
+                      Text(
+                        'or',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF999999),
+                        ),
+                      ).animate().fadeIn(delay: 500.ms),
+
+                      const SizedBox(height: 8),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: RichText(
+                          textAlign: TextAlign.center,
+                          text: TextSpan(
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF666666),
+                              height: 1.5,
+                            ),
+                            children: [
+                              const TextSpan(text: 'Open "'),
+                              TextSpan(
+                                text: touchlessUrl,
+                                style: TextStyle(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const TextSpan(
+                                text:
+                                    '" on your\nmobile browser to check-in\nusing your mobile phone',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
+
+                      const SizedBox(height: 16),
+
+                      Text(
+                        'or',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF999999),
+                        ),
+                      ).animate().fadeIn(delay: 600.ms),
+
+                      const SizedBox(height: 16),
+                    ],
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        onPressed: () => context.go('/phone'),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.login_rounded, size: 20),
+                            SizedBox(width: 10),
+                            Text('Check In'),
+                          ],
+                        ),
                       ),
+                    )
+                        .animate()
+                        .fadeIn(delay: 700.ms, duration: 500.ms)
+                        .slideY(begin: 0.3, end: 0, curve: Curves.easeOut),
+
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Powered by Kelsa',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFFAAAAAA),
+                      fontSize: 12,
                     ),
-                    onPressed: () => context.go('/phone'),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  ).animate().fadeIn(delay: 900.ms),
+                  GestureDetector(
+                    onTap: () => context.go('/checkout'),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.login_rounded, size: 22),
-                        SizedBox(width: 10),
-                        Text('Check In'),
+                        Icon(
+                          Icons.logout_rounded,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Check Out',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                )
-                    .animate()
-                    .fadeIn(delay: 700.ms, duration: 500.ms)
-                    .slideY(begin: 0.3, end: 0, curve: Curves.easeOut),
-                const SizedBox(height: 48),
-                Text(
-                  'Powered by Kelsa',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    fontSize: 12,
-                  ),
-                ).animate().fadeIn(delay: 900.ms),
-                const SizedBox(height: 24),
-              ],
+                  ).animate().fadeIn(delay: 900.ms),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

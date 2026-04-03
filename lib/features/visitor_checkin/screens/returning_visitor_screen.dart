@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../../shared/widgets/branded_header.dart';
 import '../../../shared/widgets/info_card.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/section_header.dart';
@@ -16,19 +17,17 @@ class ReturningVisitorScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Welcome Back'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => context.go('/phone'),
-        ),
-      ),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: Column(
+          children: [
+            const BrandedHeader(),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               Row(
                 children: [
                   Container(
@@ -177,8 +176,26 @@ class ReturningVisitorScreen extends ConsumerWidget {
                   },
                 ),
               ),
-            ],
-          ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => context.go('/phone'),
+                  icon: Icon(Icons.chevron_left, color: theme.colorScheme.primary, size: 20),
+                  label: Text('Back', style: TextStyle(color: theme.colorScheme.primary, fontSize: 15, fontWeight: FontWeight.w500)),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.3))),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

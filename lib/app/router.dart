@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 import '../features/branding/screens/branding_screen.dart';
 import '../features/checkout/screens/checkout_screen.dart';
@@ -11,20 +12,23 @@ import '../features/success/screens/success_screen.dart';
 import '../features/printer/screens/printer_settings_screen.dart';
 
 final appRouter = GoRouter(
-  initialLocation: '/',
+  initialLocation: kIsWeb ? '/phone' : '/',
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const BrandingScreen(),
-    ),
-    GoRoute(
-      path: '/printer-settings',
-      builder: (context, state) => const PrinterSettingsScreen(),
-    ),
-    GoRoute(
-      path: '/checkout',
-      builder: (context, state) => const CheckoutScreen(),
-    ),
+    if (!kIsWeb)
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const BrandingScreen(),
+      ),
+    if (!kIsWeb)
+      GoRoute(
+        path: '/printer-settings',
+        builder: (context, state) => const PrinterSettingsScreen(),
+      ),
+    if (!kIsWeb)
+      GoRoute(
+        path: '/checkout',
+        builder: (context, state) => const CheckoutScreen(),
+      ),
     GoRoute(
       path: '/phone',
       builder: (context, state) => const PhoneScreen(),
