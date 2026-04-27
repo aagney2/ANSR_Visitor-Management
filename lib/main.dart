@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/app.dart';
-import 'config/client_config.dart';
-import 'shared/providers/app_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,20 +14,15 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  final config = await ClientConfigRepository.load();
-
-  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
-    systemNavigationBarColor: config.backgroundColor,
+    systemNavigationBarColor: Color(0xFFF5F7FA),
   ));
 
   runApp(
-    ProviderScope(
-      overrides: [
-        clientConfigProvider.overrideWith((ref) => config),
-      ],
-      child: const VisitorManagementApp(),
+    const ProviderScope(
+      child: VisitorManagementApp(),
     ),
   );
 }

@@ -14,6 +14,8 @@ class BadgeData {
   final String? qrData;
   final Uint8List? photoBytes;
   final String? photoUrl;
+  final String? clientImageUrl;
+  final String clientName;
 
   const BadgeData({
     required this.visitorName,
@@ -23,6 +25,8 @@ class BadgeData {
     this.qrData,
     this.photoBytes,
     this.photoUrl,
+    this.clientImageUrl,
+    this.clientName = '',
   });
 }
 
@@ -51,11 +55,16 @@ class BadgeGenerator {
     final photoImage = await _loadPhoto(data);
     ui.Image? logoImage;
     try {
-      final logoBytes =
-          await rootBundle.load('assets/images/ansr_logo_full.png');
-      logoImage = await _decodeImage(logoBytes.buffer.asUint8List());
+      if (data.clientImageUrl != null && data.clientImageUrl!.isNotEmpty) {
+        final client = HttpClient();
+        final request = await client.getUrl(Uri.parse(data.clientImageUrl!));
+        final response = await request.close();
+        final bytes = await consolidateHttpClientResponseBytes(response);
+        logoImage = await _decodeImage(bytes);
+        client.close();
+      }
     } catch (e) {
-      debugPrint('[BadgeGen] ERROR loading logo: $e');
+      debugPrint('[BadgeGen] ERROR loading client logo: $e');
     }
 
     // =================================================================
@@ -90,11 +99,8 @@ class BadgeGenerator {
     }
 
     // =================================================================
-    // RIGHT COLUMN: ANSR branding + visitor info
+    // RIGHT COLUMN: Client branding + visitor info
     // =================================================================
-
-    // Official ANSR logo (includes sunburst + "ANSR" + "BETTER OUTCOMES")
-    // Centered horizontally, vertically aligned to upper portion of photo
     final double photoCenterY = photoY + photoSize / 2;
 
     if (logoImage != null) {
@@ -112,6 +118,9 @@ class BadgeGenerator {
         Rect.fromLTWH(logoX, logoY, logoW, logoH),
         Paint()..filterQuality = FilterQuality.high,
       );
+    } else if (data.clientName.isNotEmpty) {
+      _drawText(canvas, data.clientName, rightColX + 20, photoCenterY - 40,
+          fontSize: 64, fontWeight: FontWeight.bold, maxWidth: rightColW - 20);
     }
 
     // Visitor info — right column, vertically centered in lower half

@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
+import '../data/services/auth_service.dart';
 
 class ClientConfig {
   final String clientId;
   final String clientName;
-  final String logoAsset;
+  final String? logoAsset;
+  final String? clientImageUrl;
+  final String location;
   final Color primaryColor;
   final Color secondaryColor;
   final Color accentColor;
@@ -22,7 +25,9 @@ class ClientConfig {
   const ClientConfig({
     required this.clientId,
     required this.clientName,
-    required this.logoAsset,
+    this.logoAsset,
+    this.clientImageUrl,
+    this.location = '',
     required this.primaryColor,
     required this.secondaryColor,
     required this.accentColor,
@@ -48,11 +53,34 @@ class ClientConfig {
   String get employeeMasterBaseUrl =>
       '$_basePrefix/$employeeMasterPipelineId/api/v1';
 
+  /// Build a ClientConfig from authenticated client credentials.
+  factory ClientConfig.fromCredentials(ClientCredentials creds) {
+    return ClientConfig(
+      clientId: creds.leadId.toString(),
+      clientName: creds.clientName,
+      clientImageUrl: creds.clientImageUrl,
+      location: creds.location,
+      primaryColor: const Color(0xFF005465),
+      secondaryColor: const Color(0xFF007A8A),
+      accentColor: const Color(0xFF00B4CC),
+      backgroundColor: const Color(0xFFF5F7FA),
+      surfaceColor: const Color(0xFFFFFFFF),
+      visitorDatabasePipelineId: creds.visitorDatabasePipelineId,
+      visitorManagementPipelineId: creds.visitorManagementPipelineId,
+      employeeMasterPipelineId: creds.employeeMasterPipelineId,
+      apiBaseUrl: 'https://kelsa.io',
+      termsUrl: 'https://vizmo.co/terms',
+      privacyUrl: 'https://vizmo.co/privacy',
+      touchlessCheckinUrl:
+          'https://ansr-visitor-checkin.web.app?client=${creds.leadId}',
+    );
+  }
+
   factory ClientConfig.fromJson(Map<String, dynamic> json) {
     return ClientConfig(
       clientId: json['clientId'] as String,
       clientName: json['clientName'] as String,
-      logoAsset: json['logoAsset'] as String,
+      logoAsset: json['logoAsset'] as String?,
       primaryColor: _parseColor(json['primaryColor'] as String),
       secondaryColor: _parseColor(json['secondaryColor'] as String),
       accentColor: _parseColor(json['accentColor'] as String),

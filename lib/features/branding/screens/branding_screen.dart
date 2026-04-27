@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../shared/providers/app_providers.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class BrandingScreen extends ConsumerWidget {
   const BrandingScreen({super.key});
@@ -14,6 +16,9 @@ class BrandingScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
     final touchlessUrl = config?.touchlessCheckinUrl ?? '';
+    final clientImageUrl = config?.clientImageUrl;
+    final clientName = config?.clientName ?? 'Visitor Management';
+    final location = config?.location ?? '';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -34,7 +39,38 @@ class BrandingScreen extends ConsumerWidget {
                     onPressed: () => context.go('/printer-settings'),
                     tooltip: 'Printer Settings',
                   ),
-                  const SizedBox(width: 48),
+                  IconButton(
+                    icon: Icon(
+                      Icons.logout_rounded,
+                      color: Colors.grey.shade400,
+                      size: 22,
+                    ),
+                    onPressed: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Sign Out'),
+                          content: const Text(
+                              'Are you sure you want to sign out?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Sign Out'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true && context.mounted) {
+                        await ref.read(authProvider.notifier).logout();
+                        if (context.mounted) context.go('/login');
+                      }
+                    },
+                    tooltip: 'Sign Out',
+                  ),
                 ],
               ),
             ),
@@ -46,21 +82,28 @@ class BrandingScreen extends ConsumerWidget {
                   children: [
                     SizedBox(height: size.height * 0.03),
 
-                    Image.asset(
-                      'assets/images/ansr_logo_full.png',
+                    _buildClientLogo(
+                      context: context,
+                      imageUrl: clientImageUrl,
+                      clientName: clientName,
+                      theme: theme,
                       width: size.width * 0.55,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Text(
-                        config?.clientName ?? 'ANSR',
-                        style: TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.w800,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
                     ).animate().fadeIn(duration: 600.ms),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
+
+                    if (location.isNotEmpty)
+                      Text(
+                        location,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF888888),
+                          fontWeight: FontWeight.w400,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
+
+                    const SizedBox(height: 8),
 
                     Text(
                       'Welcomes you',
@@ -240,6 +283,48 @@ class BrandingScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildClientLogo({
+    required BuildContext context,
+    required String? imageUrl,
+    required String clientName,
+    required ThemeData theme,
+    required double width,
+  }) {
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
+        width: width,
+        fit: BoxFit.contain,
+        placeholder: (_, __) => Text(
+          clientName,
+          style: TextStyle(
+            fontSize: 40,
+            fontWeight: FontWeight.w800,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        errorWidget: (_, __, ___) => Text(
+          clientName,
+          style: TextStyle(
+            fontSize: 40,
+            fontWeight: FontWeight.w800,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      );
+    }
+
+    return Text(
+      clientName,
+      style: TextStyle(
+        fontSize: 40,
+        fontWeight: FontWeight.w800,
+        color: theme.colorScheme.primary,
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }

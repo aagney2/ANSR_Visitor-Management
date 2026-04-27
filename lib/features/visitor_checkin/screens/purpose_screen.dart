@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../data/models/kelsa_field.dart';
+import '../../../shared/widgets/branded_header.dart';
 import '../providers/checkin_provider.dart';
 import '../providers/visitor_type_provider.dart';
 
@@ -27,39 +28,7 @@ class _PurposeScreenState extends ConsumerState<PurposeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header: Kelsa left, ANSR logo right
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Image.asset(
-                    'assets/images/kelsa_logo.png',
-                    height: 24,
-                    errorBuilder: (_, __, ___) => Text(
-                      'Kelsa',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                  Image.asset(
-                    'assets/images/ansr_logo_full.png',
-                    height: 28,
-                    errorBuilder: (_, __, ___) => Text(
-                      'ANSR',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const BrandedHeader(),
 
             const SizedBox(height: 16),
 

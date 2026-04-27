@@ -8,6 +8,8 @@ class BadgeData {
   final String? qrData;
   final Uint8List? photoBytes;
   final String? photoUrl;
+  final String? clientImageUrl;
+  final String clientName;
 
   const BadgeData({
     required this.visitorName,
@@ -17,6 +19,8 @@ class BadgeData {
     this.qrData,
     this.photoBytes,
     this.photoUrl,
+    this.clientImageUrl,
+    this.clientName = '',
   });
 }
 

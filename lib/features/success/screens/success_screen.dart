@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../data/services/badge_generator.dart';
 import '../../../features/visitor_checkin/providers/checkin_provider.dart';
 import '../../../features/printer/providers/printer_provider.dart';
+import '../../../shared/providers/app_providers.dart';
 
 class SuccessScreen extends ConsumerStatefulWidget {
   const SuccessScreen({super.key});
@@ -74,6 +75,7 @@ class _SuccessScreenState extends ConsumerState<SuccessScreen> {
 
     try {
       final state = ref.read(checkinProvider);
+      final config = ref.read(clientConfigProvider);
       final now = DateTime.now();
 
       final badgeData = BadgeData(
@@ -81,9 +83,11 @@ class _SuccessScreenState extends ConsumerState<SuccessScreen> {
         dateTime: DateFormat('MMM d, yyyy h:mm a').format(now),
         whomToMeet: state.selectedWhomToMeet?.name ?? '',
         purpose: state.purpose ?? 'Visitor',
-        qrData: 'ANSR-VISITOR:${state.createdVisitEntryId ?? ""}|${state.name ?? ""}|${state.phoneNumber}',
+        qrData: 'KVM:${state.createdVisitEntryId ?? ""}|${state.name ?? ""}|${state.phoneNumber}',
         photoBytes: state.photoBytes,
         photoUrl: state.photoAttachment?.url ?? state.visitor?.photoUrl,
+        clientImageUrl: config?.clientImageUrl,
+        clientName: config?.clientName ?? '',
       );
 
       final imageBytes = await BadgeGenerator.generateBadge(badgeData);

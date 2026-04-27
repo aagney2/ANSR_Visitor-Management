@@ -38,7 +38,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (barcode == null || barcode.rawValue == null) return;
 
     final raw = barcode.rawValue!;
-    if (!raw.startsWith('ANSR-VISITOR:')) return;
+    if (!raw.startsWith('KVM:')) return;
 
     _processCheckout(raw);
   }
@@ -50,8 +50,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     });
 
     try {
-      // Parse: ANSR-VISITOR:leadId|name|phone
-      final payload = qrData.substring('ANSR-VISITOR:'.length);
+      final payload = qrData.substring('KVM:'.length);
       final parts = payload.split('|');
       if (parts.isEmpty || parts[0].isEmpty) {
         throw Exception('Invalid badge QR code');

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
+import '../features/auth/screens/login_screen.dart';
 import '../features/branding/screens/branding_screen.dart';
 import '../features/checkout/screens/checkout_screen.dart';
 import '../features/onboarding/screens/phone_screen.dart';
@@ -12,8 +13,12 @@ import '../features/success/screens/success_screen.dart';
 import '../features/printer/screens/printer_settings_screen.dart';
 
 final appRouter = GoRouter(
-  initialLocation: kIsWeb ? '/phone' : '/',
+  initialLocation: kIsWeb ? '/phone' : '/login',
   routes: [
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
+    ),
     if (!kIsWeb)
       GoRoute(
         path: '/',

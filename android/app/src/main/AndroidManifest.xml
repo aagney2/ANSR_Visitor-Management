@@ -10,7 +10,7 @@
         tools:targetApi="s"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <application
-        android:label="ANSR Visitor Management"
+        android:label="Kelsa Visitor Management"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
