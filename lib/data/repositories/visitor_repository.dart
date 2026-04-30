@@ -130,6 +130,7 @@ class VisitorRepository {
   Future<int> createVisitEntry({
     required Visitor visitor,
     required int databaseLeadId,
+    String? loginLocation,
   }) async {
     final fields = await getManagementFields();
     final payload = <String, dynamic>{};
@@ -181,6 +182,9 @@ class VisitorRepository {
         'upload_id': visitor.signatureUploadId,
       });
     }
+
+    // Login location from client config (which device/location checked them in)
+    setField(['login_location', 'cf_login_location'], loginLocation);
 
     // Visitor pass number
     setField(['visitor_pass_no', 'cf_visitor_pass_no'], visitor.badgeNumber);

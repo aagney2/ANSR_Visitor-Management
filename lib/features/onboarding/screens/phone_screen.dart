@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/utils/validators.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:intl_phone_field/phone_number.dart';
 import '../../../shared/providers/app_providers.dart';
 import '../../../shared/widgets/branded_header.dart';
 import '../../../shared/widgets/error_banner.dart';
@@ -20,28 +20,18 @@ class PhoneScreen extends ConsumerStatefulWidget {
 }
 
 class _PhoneScreenState extends ConsumerState<PhoneScreen> {
-  final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _consentGiven = false;
+  String _completePhone = '';
+  bool _isPhoneValid = false;
 
-  @override
-  void dispose() {
-    _phoneController.dispose();
-    super.dispose();
-  }
-
-  bool get _canContinue =>
-      _consentGiven &&
-      _phoneController.text.trim().isNotEmpty &&
-      Validators.phoneNumber(_phoneController.text) == null;
+  bool get _canContinue => _consentGiven && _isPhoneValid;
 
   Future<void> _onContinue() async {
     if (!_formKey.currentState!.validate() || !_consentGiven) return;
 
     final notifier = ref.read(checkinProvider.notifier);
-    notifier.setPhoneNumber(
-      Validators.normalizePhone(_phoneController.text.trim()),
-    );
+    notifier.setPhoneNumber(_completePhone);
     notifier.setConsent(true);
 
     // Pre-warm custom field caches in background while searching
@@ -94,28 +84,28 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                         ref.read(checkinProvider.notifier).clearError(),
                     onRetry: _onContinue,
                   ),
-                TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[\d\+\-\s\(\)]')),
-                    LengthLimitingTextInputFormatter(15),
-                  ],
+                IntlPhoneField(
                   decoration: InputDecoration(
                     labelText: 'Phone Number',
-                    hintText: '+91 99999 99999',
+                    hintText: '99999 99999',
                     prefixIcon: Icon(
                       Icons.phone_outlined,
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  validator: Validators.phoneNumber,
-                  onChanged: (_) => setState(() {}),
+                  initialCountryCode: 'IN',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 1,
+                  ),
+                  disableLengthCheck: false,
+                  onChanged: (PhoneNumber phone) {
+                    setState(() {
+                      _completePhone = phone.completeNumber;
+                      _isPhoneValid = phone.number.length >= 6;
+                    });
+                  },
                 ),
                 const SizedBox(height: 24),
                 InkWell(

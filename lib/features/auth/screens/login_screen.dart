@@ -266,15 +266,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       .fadeIn(delay: 500.ms, duration: 500.ms)
                       .slideY(begin: 0.3, end: 0, curve: Curves.easeOut),
 
-                  SizedBox(height: size.height * 0.08),
-
-                  Text(
-                    'Powered by Kelsa',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: const Color(0xFFAAAAAA),
-                    ),
-                  ).animate().fadeIn(delay: 700.ms),
                 ],
               ),
             ),

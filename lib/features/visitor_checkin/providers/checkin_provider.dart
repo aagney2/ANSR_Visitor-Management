@@ -304,6 +304,7 @@ class CheckinNotifier extends StateNotifier<CheckinState> {
       final visitId = await repo.createVisitEntry(
         visitor: visitor,
         databaseLeadId: dbId,
+        loginLocation: config.location,
       );
 
       state = state.copyWith(

@@ -248,12 +248,10 @@ class BrandingScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Powered by Kelsa',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFFAAAAAA),
-                      fontSize: 12,
-                    ),
+                  Image.asset(
+                    'assets/images/kelsa_logo.png',
+                    height: 28,
+                    fit: BoxFit.contain,
                   ).animate().fadeIn(delay: 900.ms),
                   GestureDetector(
                     onTap: () => context.go('/checkout'),
