@@ -60,6 +60,8 @@ class WhomToMeetNotifier extends StateNotifier<WhomToMeetState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final service = _ref.read(employeeMasterServiceProvider);
+      final config = _ref.read(clientConfigProvider);
+      final loginLocation = config?.location.trim().toLowerCase() ?? '';
       final employees = <EmployeeOption>[];
       int page = 1;
 
@@ -74,14 +76,23 @@ class WhomToMeetNotifier extends StateNotifier<WhomToMeetState> {
         for (final leadJson in leads) {
           final lead = KelsaLead.fromJson(leadJson as Map<String, dynamic>);
           final name = lead.name ?? _extractName(lead);
-          if (name != null && name.isNotEmpty && lead.id != null) {
-            employees.add(EmployeeOption(
-              leadId: lead.id!,
-              name: name,
-              email: _extractString(lead, ['employee_email', 'email']),
-              designation: _extractString(lead, ['designation']),
-            ));
+          if (name == null || name.isEmpty || lead.id == null) continue;
+
+          // Filter by location if client config has one set
+          if (loginLocation.isNotEmpty) {
+            final empLocation = _extractLocationName(lead);
+            if (empLocation == null ||
+                empLocation.trim().toLowerCase() != loginLocation) {
+              continue;
+            }
           }
+
+          employees.add(EmployeeOption(
+            leadId: lead.id!,
+            name: name,
+            email: _extractString(lead, ['employee_email', 'email']),
+            designation: _extractString(lead, ['designation']),
+          ));
         }
 
         if (leads.length < 50) break;
@@ -116,6 +127,16 @@ class WhomToMeetNotifier extends StateNotifier<WhomToMeetState> {
     final cfv = lead.customFieldValues;
     for (final key in keys) {
       final val = cfv[key];
+      if (val is String && val.isNotEmpty) return val;
+    }
+    return null;
+  }
+
+  String? _extractLocationName(KelsaLead lead) {
+    final cfv = lead.customFieldValues;
+    for (final key in ['cf_location', 'location']) {
+      final val = cfv[key];
+      if (val is Map) return val['name'] as String?;
       if (val is String && val.isNotEmpty) return val;
     }
     return null;

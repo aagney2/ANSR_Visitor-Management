@@ -185,10 +185,12 @@ class CheckinNotifier extends StateNotifier<CheckinState> {
           isLoading: false,
         );
       } else {
-        state = state.copyWith(
+        // New visitor — create fresh state keeping only phone number
+        state = CheckinState(
           step: CheckinStep.purpose,
+          phoneNumber: state.phoneNumber,
+          consentGiven: state.consentGiven,
           isReturningVisitor: false,
-          isLoading: false,
         );
       }
     } catch (e) {

@@ -43,8 +43,24 @@ class VisitorRepository {
     final leads = await _dbService.searchLeads('$searchKey:$phone');
     if (leads.isEmpty) return null;
 
-    final lead = leads.first;
-    return _mapLeadToVisitor(lead, fields);
+    // Kelsa search is partial-match; verify exact phone match
+    final searchDigits = _normalizeDigits(phone);
+    for (final lead in leads) {
+      final cfv = lead.customFieldValues;
+      String? leadPhone;
+      for (final key in ['cf_phone_number', 'phone_number', 'cf_phone', 'phone']) {
+        if (cfv[key] != null) {
+          leadPhone = cfv[key].toString();
+          break;
+        }
+      }
+      if (leadPhone == null) continue;
+      final leadDigits = _normalizeDigits(leadPhone);
+      if (_phonesMatch(searchDigits, leadDigits)) {
+        return _mapLeadToVisitor(lead, fields);
+      }
+    }
+    return null;
   }
 
   Visitor _mapLeadToVisitor(KelsaLead lead, CustomFieldMapping fields) {
@@ -239,5 +255,23 @@ class VisitorRepository {
       return await service.pollDraftUntilResolved(result.draftId!);
     }
     throw Exception('Could not resolve lead ID from Kelsa response');
+  }
+
+  /// Strips a phone string to digits only.
+  static String _normalizeDigits(String phone) =>
+      phone.replaceAll(RegExp(r'[^0-9]'), '');
+
+  /// Compares two digit-only phone strings, accounting for country code
+  /// differences (e.g., "919876543210" vs "9876543210").
+  static bool _phonesMatch(String a, String b) {
+    if (a == b) return true;
+    // Handle case where one has country code and the other doesn't
+    if (a.length > b.length && a.endsWith(b) && a.length - b.length <= 3) {
+      return true;
+    }
+    if (b.length > a.length && b.endsWith(a) && b.length - a.length <= 3) {
+      return true;
+    }
+    return false;
   }
 }

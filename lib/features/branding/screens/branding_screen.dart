@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../shared/providers/app_providers.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../visitor_checkin/providers/checkin_provider.dart';
 
 class BrandingScreen extends ConsumerWidget {
   const BrandingScreen({super.key});
@@ -222,7 +223,10 @@ class BrandingScreen extends ConsumerWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        onPressed: () => context.go('/phone'),
+                        onPressed: () {
+                          ref.read(checkinProvider.notifier).reset();
+                          context.go('/phone');
+                        },
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
